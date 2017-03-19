@@ -10,14 +10,38 @@ app.use(express.static(__dirname + '/html'));
 var status_code = 200;
 var random_wait = 100;
 
+
+app.get("/overview", function(req,res) {
+	var  json_response = {};
+	json_response["ChipID"] = "000001";
+	json_response["CPU frequency"] = "80 Mhz";
+	json_response["Last reset reason"] = "Power On";
+	json_response["Uptime"] = "2 days";
+	json_response["Memory size"] = "1024 bytes";
+	json_response["Free heap"] = "2048 bytes";
+	json_response["Firmware size"] = "4096 byte";
+	json_response["Free firmware space"] = "8192 byte";
+	
+	//insert some random wait
+	setTimeout( function () {
+		//simulate .fail on front end side via http code
+		res.status(status_code);
+		res.json(json_response);
+	}, random_wait * Math.random());
+	
+	console.log("[GET] /overview");
+});
+
+
 app.get("/wifi", function(req,res) {
 	
-	var json_response;
+	var json_response = {};
 	
-	//wifi status and networks
-	json_response = {"status": {"Hostname":"big_seven_0001","SSID":"big_seven_0001", "IP": "192.168.4.1"}, "networks": [{"ssid":"5a105e8b9d40e1329780d62ea2265d8a", "auth":1, "quality": 90}, {"ssid":"ad0234829205b9033196ba818f7a872b", "auth":0, "quality": 50}, {"ssid":"8ad8757baa8564dc136c1e07507f4a98", "auth":1, "quality": 85}]};
-	//wifi status no networks
-	//json_response = {"status": {"Hostname":"big_seven_0001","SSID":"big_seven_0001", "IP": "192.168.4.1"}, "networks": []};
+	//wifi status
+	json_response["status"] = {"Status": "connected", "Hostname": "big_seven_0001", "SSID": "into_the_wild", "IP":"192.168.88.88"};
+	//wifi networks
+	//json_response["networks"] = [];
+	json_response["networks"] = [{"ssid":"5a105e8b9d40e1329780d62ea2265d8a", "auth":1, "quality": 90}, {"ssid":"ad0234829205b9033196ba818f7a872b", "auth":1, "quality": 85}, {"ssid":"8ad8757baa8564dc136c1e07507f4a98", "auth":0, "quality": 90}];
 	
 	//insert some random wait
 	setTimeout( function () {
