@@ -44,13 +44,13 @@
 			</div>
 			<div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
 				<div id="container_overview">
-					<h2 class="page-header">Overview</h2>
+					<h3 class="page-header">Overview</h3>
 					<div class="list-group" id="overview">
 						<!-- dynamically loaded -->
 					</div>
 				</div>
 				<div id="container_wifi" class="hidden">
-					<h2 class="page-header">WiFi Configuration</h2>
+					<h3 class="page-header">WiFi Configuration</h3>
 					<label for="network_status">Network status</label>
 					<div class="list-group" id="network_status"></div>
 					<label for="network_available">Available WiFi networks</label>
@@ -84,7 +84,9 @@
 					</div>
 				</div>
 				<div id="container_time" class="hidden">
-					<h2 class="page-header">Time configuration</h2>
+					<h3 class="page-header">Time configuration</h3>
+					<div class="list-group" id="time_error">
+					</div>
 					<div class="list-group">
 						<div class="list-group-item">
 							<div class="row">
@@ -113,7 +115,7 @@
 										<option value="-10800">UTC-03:00</option>
 										<option value="-7200">UTC-02:00</option>
 										<option value="-3600">UTC-01:00</option>
-										<option value="0" selected="selected">UTC±00:00</option>
+										<option value="0" selected="selected">UTC&plusmn;00:00</option>
 										<option value="+3600">UTC+01:00</option>
 										<option value="+7200">UTC+02:00</option>
 										<option value="+10800">UTC+03:00</option>
@@ -160,7 +162,7 @@
 					</div>
 				</div>
 				<div id="container_fwupdate" class="hidden">
-					<h2 class="page-header">Firmware update</h2> <strong>Not yet implemented! though its desired</strong>
+					<h3 class="page-header">Firmware update</h3> <strong>Not yet implemented! though its desired</strong>
 				</div>
 			</div>
 		</div>
@@ -246,13 +248,79 @@
 					$("#network_password").attr("type", "password");
 				}
 			});
+			
+			//post requests
+			
+			//bind wifi network config
+			$("#network_setup").on("click", "button#btn_save", function(e) {
+				//pretty progress bar
+				NProgress.start();
+				$(this).html("Please wait...");
+				
+				//get ssid and network from inputs
+				var network_password = $("#network_password").val();
+				var network_ssid = $("#network_ssid").val();
+				
+				//make them requests
+				$.post('/wifi', {ssid: network_ssid, pass: network_password }, function (data) {
+					//hide password input in modal
+					$("#body_pre_request").hide();
+					//present some pretty error messages to the user
+					if(data.error) {
+						$("#body_post_request").html("<div class=\"list-group\"><div class=\"list-group-item list-group-item-warning\"><strong>Fool!</strong> "+data.message+"</div></div>").removeClass("hidden").show();
+						$("#btn_save").hide();
+					} else {
+						$("#body_post_request").html("<div class=\"list-group\"><div class=\"list-group-item list-group-item-success\">Settings saved for network <strong>"+network_ssid+"</strong>, after rebooting connect to the same network to configure the device!</div></div>").removeClass("hidden").show();
+						$("#btn_save").html("Reboot");
+						
+						//rebind button
+						$("#btn_save").hide();
+					}
+				}, "json").fail( function(xhr, status, error) {
+					//hide password input in modal
+					$("#body_pre_request").hide();
+					//prepare error message, make it pretty show it
+					$("#body_post_request").html("<div class=\"list-group\"><div class=\"list-group-item list-group-item-danger\">Oh snap! Something went wrong: <strong>"+xhr.status+" (" + error + ")</strong></div></div>").removeClass("hidden").show();
+					//hide the connect button
+					$("#btn_save").hide();
+				}).always(function () {
+					NProgress.done();
+				});
+			});
+			
+			//bind time settings update
+			$("#container_time").on("click", "button#btn_save", function (e) {
+				//pretty progress bar
+				NProgress.start();
+				
+				//get values
+				var  time_server_val = $("#time_server").val();
+				var  time_zone_val = $("#time_zone").val();
+				var  time_dst_val = $("#time_dst").val();
+				
+				$.post("/time", {time_server: time_server_val, time_zone: time_zone_val, time_dst: time_dst_val}, function(data) {
+				
+					//pretty messages
+					if(data.error) {
+						$("#time_error").html("<div class=\"list-group-item list-group-item-danger\">Oh Snap! Something went wrong: <strong>"+data.message +"</strong></div>").removeClass("hidden");
+					} else {
+						$("#time_error").html("<div class=\"list-group-item list-group-item-success\">Well done! Settings saved</div>").removeClass("hidden");
+					}
+				}, "json").fail( function(xhr, status, error) {
+					$("#time_error").html("<div class=\"list-group-item list-group-item-danger\">Oh Snap! Something went wrong: <strong>"+xhr.status+" (" + error + ")</strong></div>").removeClass("hidden");
+				}).always( function () {
+						NProgress.done();
+				});
+				//debug info
+				console.log(time_server_val + ", " + time_zone_val + ", " + time_dst_val  );
+			});
 	});
 	//dynamic load
 	function load_page(page) {
 	
 		//load pretty bar
 		NProgress.start();
-		console.log("loading page - " + (page.length > 0 ? page : "overview"));
+		console.log("loading page - " + page);
 		
 		switch(page){
 			case "overview":
@@ -260,13 +328,13 @@
 					var html_elements = [];
 					$.each(data, function(item_name, item_value) {
 							html_elements.push('<div class="list-group-item"><div class="row">');
-							html_elements.push('<div class="col-xs-4 col-md-3 text-right"><strong>' + item_name + ":</strong></div>");
-							html_elements.push('<div class="col-xs-8 col-md-9 text-left">' + item_value + "</div>");
+							html_elements.push('<div class="col-xs-6 col-md-3 text-right"><strong>' + item_name + ":</strong></div>");
+							html_elements.push('<div class="col-xs-6 col-md-9 text-left">' + item_value + "</div>");
 							html_elements.push("</div></div>");
 						}),
 						$("#overview").html(html_elements.join(""))
 				}).fail(function(xhr, status, error) {
-					$("#container_overview").html('<h2 class="page-header">Overview</h2><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_overview").html('<h3 class="page-header">Overview</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
 				}).always(function() {
 					NProgress.done()
 				});
@@ -297,18 +365,18 @@
 						$("#network_available").html('<div class="list-group-item list-group-item-warning">Scan not finished or no network available</div>');
 					}
 				}).fail(function(xhr, status, error) {
-					$("#container_wifi").html('<h2 class="page-header">WiFi Configuration</h2><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_wifi").html('<h3 class="page-header">WiFi Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
 				}).always(function() {
 					NProgress.done()
 				});
 				break;
 			case "time":
 				$.getJSON("/time", function(data) {
-					$("#time_server").val(data.ntp_server);
+					$("#time_server").val(data.time_server);
 					$("#time_zone option[value='" + data.time_zone + "']").prop("selected", true);
 					$("#time_dst option[value='" + data.time_dst + "']").prop("selected", true);
 				}).fail(function(xhr, status, error) {
-					$("#container_time").html('<h2 class="page-header">Time Configuration</h2><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_time").html('<h3 class="page-header">Time Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
 				}).always(function() {
 					NProgress.done();
 				});

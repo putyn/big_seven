@@ -55,7 +55,7 @@ app.get("/wifi", function(req,res) {
 
 app.get("/time", function(req, res) {
 	
-	var json_response = {"ntp_server": "eu.ntp.pool.org", "time_zone": '+7200', "time_dst": 'no'};
+	var json_response = {"time_server": "eu.ntp.pool.org", "time_zone": '+7200', "time_dst": "yes"};
 	
 	//insert some random wait
 	setTimeout( function () {
@@ -100,7 +100,7 @@ app.post("/wifi", function(req, res) {
 app.post("/time", function(req,res) {
 	
 	//POST variables from request
-	var ntp_server = req.body.ntp_server;
+	var ntp_server = req.body.time_server;
 	var time_zone = req.body.time_zone;
 	var time_dst = req.body.time_dst;
 	var json_response;
@@ -108,7 +108,7 @@ app.post("/time", function(req,res) {
 	//fail response
 	json_response = {"error": true, "message": "can't save config file on flash"};
 	//success response, not sure if sending data back is required
-	json_response = {"error": false, "message": "", "ntp_server": ntp_server, "time_zone": time_zone, "time_dst": time_dst};
+	json_response = {"error": false, "message": "", "time_server": ntp_server, "time_zone": time_zone, "time_dst": time_dst};
 	
 	//insert some random wait
 	setTimeout( function () {
