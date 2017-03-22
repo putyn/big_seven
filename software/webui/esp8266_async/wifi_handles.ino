@@ -1,4 +1,22 @@
 /*
+ * some system information
+ */
+void handle_overview(AsyncWebServerRequest *request) {
+
+  String json_resp;
+
+  json_resp = "{\"ChipID\": \"" + String(ESP.getChipId(), HEX) + "\",";
+  json_resp += "\"CPU frequency\": \"" + String(ESP.getCpuFreqMHz()) + " MHz\",";
+  json_resp += "\"Last reset reason\": \"" + ESP.getResetReason() + "\",";
+  json_resp += "\"Uptime\": \"" + String(millis()/1000) + "s\",";
+  json_resp += "\"Free heap\": \"" + formatBytes(ESP.getFreeHeap()) + "\",";
+  json_resp += "\"Storage size\": \"" + formatBytes(ESP.getFlashChipSize()) + "\",";
+  json_resp += "\"Firmware size\": \"" + formatBytes(ESP.getSketchSize()) + "\",";
+  json_resp += "\"Free firmware space\": \"" + formatBytes(ESP.getFreeSketchSpace()) + "\"}";
+  
+  request->send(200, "text/json", json_resp);
+}
+/*
  * handle wifi setting save
  */
 void handle_wifi_save(AsyncWebServerRequest *request) {
@@ -55,9 +73,39 @@ void handle_wifi(AsyncWebServerRequest *request) {
  * placeholder template for time, untill its finished
  */
 void handle_time(AsyncWebServerRequest *request) {
-  String json_resp;
+  
+  String json_resp = "";
 
-  json_resp = "{\"time_server\":\"ro.pool.ntp.org\",\"time_zone\":7200, \"time_dts\": 1}";
+  json_resp = "{\"time_server\":\""+ String(settings.time_server) +"\",";
+  if(settings.time_zone > 0) {
+    json_resp += "\"time_zone\":\"+" + String(settings.time_zone) + "\",";  
+  } else {
+    json_resp += "\"time_zone\":" + String(settings.time_zone) + ",";
+  }
+  json_resp +=  "\"time_dst\": "+ String(settings.time_dst) +"}";
   request->send(200, "text/json", json_resp);
 }
+
+void handle_time_save(AsyncWebServerRequest *request) {
+  //json response
+  String json_resp;
+  
+  if (request->hasParam("time_server", true) && request->hasParam("time_zone", true) && request->hasParam("time_dst", true)) {
+    
+    //get time_server, time_zone, time_dst from POST request
+    strncpy(settings.time_server, request->getParam("time_server", true)->value().c_str(), sizeof (settings.time_server));
+    settings.time_zone = request->getParam("time_zone", true)->value().toInt();
+    settings.time_dst  = request->getParam("time_dst", true)->value().toInt();
+
+    if (save_file((char *)"/settings.dat", (byte *)&settings, sizeof(struct settings_t))) {
+      json_resp = F("{\"error\":false, \"message\": \"\"}");
+    } else {
+      json_resp = F("{\"error\":true, \"message\": \"Settings could not be saved\"}");
+    }
+  } else {
+    json_resp = F("{\"error\":true, \"message\": \"Bad request\"}");
+  }
+  request->send(200, "text/json", json_resp);
+}
+
 

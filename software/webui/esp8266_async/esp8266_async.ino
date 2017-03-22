@@ -14,27 +14,8 @@ struct wifi_settings_t {
 struct settings_t {
   char time_server[32];
   int16_t time_zone;
-  uint8_t time_dts;   
+  int16_t time_dst;   
 } settings; 
-
-
-
-void handle_overview(AsyncWebServerRequest *request) {
-
-  String json_resp;
-
-  json_resp = "{\"ChipID\": \"" + String(ESP.getChipId(), HEX) + "\",";
-  json_resp += "\"CPU frequency\": \"" + String(ESP.getCpuFreqMHz()) + " MHz\",";
-  json_resp += "\"Uptime\": \"" + String(millis()/1000) + "s\",";
-  json_resp += "\"Memory size\": \"" + formatBytes(ESP.getFlashChipSize()) + "\",";
-  json_resp += "\"Free heap\": \"" + formatBytes(ESP.getFreeHeap()) + "\",";
-  json_resp += "\"Firmware size\": \"" + formatBytes(ESP.getSketchSize()) + "\",";
-  json_resp += "\"Free firmware space\": \"" + formatBytes(ESP.getFreeSketchSpace()) + "\"}";
-  
-  request->send(200, "text/json", json_resp);
-}
-
-
 
 void setup() {
   Serial.begin(74880);
@@ -46,7 +27,7 @@ void setup() {
   //open file system
   if (SPIFFS.begin())
     Serial.println(F("File system opened, generating file list"));
-
+  
   Dir dir = SPIFFS.openDir("/");
   while (dir.next()) {
     String fileName = dir.fileName();
@@ -55,6 +36,14 @@ void setup() {
   }
   Serial.printf("\n");
 
+  //load settings
+  if (SPIFFS.exists("/settings.dat")) {
+      read_file((char *)"/settings.dat", (byte *)&settings, sizeof(struct settings_t));
+      Serial.printf("Time server: %s\n", settings.time_server);
+      Serial.printf("Time zone: %d\n", settings.time_zone);
+      Serial.printf("Time DST: %d\n", settings.time_dst);
+  }
+  
   //WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   
@@ -63,7 +52,7 @@ void setup() {
   if (SPIFFS.exists("/wifi.dat")) {
     //read wifi settings from file
     read_file((char *)"/wifi.dat", (byte *)&wifi, sizeof(struct wifi_settings_t));
-    Serial.printf("Found config trying to connect to ssid %s with pass %s\n", wifi.ssid, wifi.pass);
+    Serial.printf("Found config trying to connect to ssid %s\n", wifi.ssid);
     WiFi.begin(wifi.ssid, wifi.pass);
     //remove config
     SPIFFS.remove("/wifi.dat");
@@ -91,12 +80,13 @@ void setup() {
 
   server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request ) {
     request->redirect("/");
-    //ESP.restart();
+    ESP.restart();
   });
   server.on("/wifi", HTTP_GET,  handle_wifi);
   server.on("/time", HTTP_GET,  handle_time);
-   server.on("/overview", HTTP_GET,  handle_overview);
+  server.on("/overview", HTTP_GET,  handle_overview);
   server.on("/wifi", HTTP_POST,  handle_wifi_save);
+  server.on("/time", HTTP_POST,  handle_time_save);
   server.serveStatic("/", SPIFFS, "/").setCacheControl("max-age:600");
 
   server.begin();
