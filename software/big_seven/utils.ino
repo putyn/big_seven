@@ -25,16 +25,17 @@ void tock() {
     local_time.hours = 0;
   }
   /**
-   * periodically update the time via ntp @1:00AM
-   */
+   * needs updated doesn't work properly
+   * periodically update the time via ntp @1:00AM 
   if(local_time.hours == 1 && local_time.minutes == 0 && local_time.seconds == 0 && local_time.mseconds == 0) {
-    local_time.update_time = 1;
-  } 
+    settings.update_time = 1;
+  }
+  */ 
   /**
    * since this is an interrupt we dont want to execute too much code here
    * we will update the clock in the loop
   */
-  local_time.update_display = 1;
+  settings.update_display = 1;
 
   /**
    * visual feedback using the led from GPIO12
@@ -47,7 +48,7 @@ void tock() {
  * updates the display
  * @parm t dt
 */
-void update_displays(d_t t) {
+void update_displays(dtime_t t) {
   /**
    * since display 1 & 2 are rotated 180 deg, data for the 7 segment display looks a bit different
   */
@@ -78,4 +79,66 @@ void update_displays(d_t t) {
   digitalWrite(CSN_PIN, LOW);
   digitalWrite(CSN_PIN, HIGH);
   digitalWrite(CSN_PIN, LOW);
+}
+/*
+ * return size of file human readable
+ */
+String formatBytes(size_t bytes) {
+  if (bytes < 1024) {
+    return String(bytes) + "B";
+  } else if (bytes < (1024 * 1024)) {
+    return String(bytes / 1024.0) + "KB";
+  } else if (bytes < (1024 * 1024 * 1024)) {
+    return String(bytes / 1024.0 / 1024.0) + "MB";
+  } else {
+    return String(bytes / 1024.0 / 1024.0 / 1024.0) + "GB";
+  }
+}
+/*
+ * rssi to quality for sorting networks
+ * based on http://www.speedguide.net/faq/how-does-rssi-dbm-relate-to-signal-quality-percent-439
+ */
+int rssi2quality(int rssi) {
+  int quality;
+
+  if ( rssi <= -100) {
+    quality = 0;
+  } else if ( rssi >= -50) {
+    quality = 100;
+  } else {
+    quality = 2 * ( rssi + 100);
+  }
+  return quality;
+}
+/*
+ * helper function for saving data structures to file
+ * havely based on  https://github.com/letscontrolit/ESPEasy/blob/mega/src/Misc.ino#L767
+ */
+boolean save_file(char* fname, byte* memAddress, int datasize){
+
+  fs::File f = SPIFFS.open(fname, "w+");
+  if (f) {
+    byte *pointerToByteToSave = memAddress;
+    for (int x = 0; x < datasize ; x++) {
+      f.write(*pointerToByteToSave);
+      pointerToByteToSave++;
+    }
+    f.close();
+  }
+  return true;
+}
+/*
+ * helper function for reading data structures from file
+ * havely based on  https://github.com/letscontrolit/ESPEasy/blob/mega/src/Misc.ino#L801
+ */
+void read_file(char* fname, byte* memAddress, int datasize) {
+  fs::File f = SPIFFS.open(fname, "r+");
+  if (f) {
+    byte *pointerToByteToRead = memAddress;
+    for (int x = 0; x < datasize; x++) {
+      *pointerToByteToRead = f.read();
+      pointerToByteToRead++;// next byte
+    }
+    f.close();
+  }
 }
