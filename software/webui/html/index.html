@@ -5,8 +5,9 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-	<meta name="description" content="">
-	<meta name="author" content="">
+	<meta name="description" content="html5 bootstrap webui with ESP8266">
+	<meta name="author" content="Vlad Conut">
+	<meta name="theme-color" content="#333">
 	<link rel="icon" href="img/favicon.ico">
 	<title>Big Seven</title>
 	<!-- build:css style.css -->
@@ -60,7 +61,7 @@
 						<!-- dynamically loaded -->
 					</div>
 					<div class="form-group text-center">
-						<button type="button" class="btn btn-default" id="btn_refresh" onclick="location.reload()"> <span class="glyphicon glyphicon-refresh"></span> Refresh list </button>
+						<button type="button" class="btn btn-default" id="btn_refresh"> <span class="glyphicon glyphicon-refresh"></span> Refresh list </button>
 					</div>
 					<div class="modal fade" id="network_setup" tabindex="-1" role="dialog">
 						<div class="modal-dialog" role="document">
@@ -94,7 +95,7 @@
 							<div class="row">
 								<div class="col-xs-4 col-md-3 text-right"> <strong>Time Server:</strong> </div>
 								<div class="col-xs-8 col-md-9 text-left">
-									<input type="text" class="form-control" placeholder="ntp.pool.org" id="time_server" onclick="$(this).select()">
+									<input type="text" class="form-control" placeholder="ntp.pool.org" id="time_server" onclick="$(this).select()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
 								</div>
 							</div>
 						</div>
@@ -251,8 +252,15 @@
 				}
 			});
 			
-			//post requests
+			//bind refresh
+			$("#btn_refresh").on("click", function() {
+				if($(".nav-sidebar").is(":visible"))
+					$(".nav-sidebar > li > a[href*=wifi]").click();
+						else
+					$(".navbar-right > li > a[href*=wifi]").click();
+			});
 			
+			//post requests
 			//bind wifi network config
 			$("#network_setup").on("click", "button#btn_save", function(e) {
 				//pretty progress bar
@@ -304,12 +312,12 @@
 				
 					//pretty messages
 					if(data.error) {
-						$("#time_error").html("<div class=\"list-group-item list-group-item-danger\">Oh Snap! Something went wrong: <strong>"+data.message +"</strong></div>").removeClass("hidden");
+						$("#time_error").html("<div class=\"list-group-item list-group-item-danger\"><strong>Oh Snap!</strong> Something went wrong: <strong>"+data.message +"</strong></div>").removeClass("hidden");
 					} else {
-						$("#time_error").html("<div class=\"list-group-item list-group-item-success\">Well done! Settings saved</div>").removeClass("hidden");
+						$("#time_error").html("<div class=\"list-group-item list-group-item-success\"><strong>Well done!</strong> Settings saved!</div>").removeClass("hidden");
 					}
 				}, "json").fail( function(xhr, status, error) {
-					$("#time_error").html("<div class=\"list-group-item list-group-item-danger\">Oh Snap! Something went wrong: <strong>"+xhr.status+" (" + error + ")</strong></div>").removeClass("hidden");
+					$("#time_error").html("<div class=\"list-group-item list-group-item-danger\"><strong>Oh Snap!</strong>  Something went wrong: <strong>"+xhr.status+" (" + error + ")</strong></div>").removeClass("hidden");
 				}).always( function () {
 						NProgress.done();
 				});
@@ -321,7 +329,8 @@
 	function load_page(page) {
 	
 		//load pretty bar
-		NProgress.start();
+		if(window.location.hash != "")
+			NProgress.start();
 		console.log("loading page - " + page);
 		
 		switch(page){
@@ -336,7 +345,7 @@
 						}),
 						$("#overview").html(html_elements.join(""))
 				}).fail(function(xhr, status, error) {
-					$("#container_overview").html('<h3 class="page-header">Overview</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_overview").html('<h3 class="page-header">Overview</h3><div class="list-group"><div class="list-group-item list-group-item-danger"><strong>Oh Snap!</strong> Something went wrong: <strong>' +xhr.status+' (' + error + ')</strong></div></div>');
 				}).always(function() {
 					NProgress.done()
 				});
@@ -367,7 +376,7 @@
 						$("#network_available").html('<div class="list-group-item list-group-item-warning">Scan not finished or no network available</div>');
 					}
 				}).fail(function(xhr, status, error) {
-					$("#container_wifi").html('<h3 class="page-header">WiFi Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_wifi").html('<h3 class="page-header">WiFi Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger"><strong>Oh Snap!</strong> Something went wrong: <strong>' +xhr.status+' (' + error + ')</strong></div></div>');
 				}).always(function() {
 					NProgress.done()
 				});
@@ -378,7 +387,7 @@
 					$("#time_zone option[value='" + data.time_zone + "']").prop("selected", true);
 					$("#time_dst option[value='" + data.time_dst + "']").prop("selected", true);
 				}).fail(function(xhr, status, error) {
-					$("#container_time").html('<h3 class="page-header">Time Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger">Something went wrong with the last request - <strong>' + xhr.status + " (" + error + ")</strong></div></div>")
+					$("#container_time").html('<h3 class="page-header">Time Configuration</h3><div class="list-group"><div class="list-group-item list-group-item-danger"><strong>Oh Snap!</strong> Something went wrong: <strong>'+xhr.status+' (' + error + ')</strong></strong></div></div>');
 				}).always(function() {
 					NProgress.done();
 				});

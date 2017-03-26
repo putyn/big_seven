@@ -1,10 +1,12 @@
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
+#include <ESP8266Ping.h>
+#include <DNSServer.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <FS.h>
 
 AsyncWebServer server(80);
+DNSServer dns_server;
 
 struct wifi_settings_t {
   char ssid[32];
@@ -13,17 +15,18 @@ struct wifi_settings_t {
 
 struct settings_t {
   char time_server[32];
+  char hostname[32];
   int16_t time_zone;
-  int16_t time_dst;   
+  int16_t time_dst;
+  boolean reboot;
+  boolean online;
+  boolean soft_ap;
+     
 } settings; 
 
 void setup() {
   Serial.begin(74880);
-
-  //set a nice hostname
-  String new_hostname = "big_seven_" + String(ESP.getChipId(), HEX);
-  WiFi.hostname(new_hostname);
-
+  
   //open file system
   if (SPIFFS.begin())
     Serial.println(F("File system opened, generating file list"));
@@ -34,7 +37,6 @@ void setup() {
     size_t fileSize = dir.fileSize();
     Serial.printf("\tFS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
   }
-  Serial.printf("\n");
 
   //load settings
   if (SPIFFS.exists("/settings.dat")) {
@@ -43,7 +45,14 @@ void setup() {
       Serial.printf("Time zone: %d\n", settings.time_zone);
       Serial.printf("Time DST: %d\n", settings.time_dst);
   }
+  //settings that are not saved
+  settings.reboot = false;
+  settings.soft_ap = false;
   
+   //set a nice hostname
+  sprintf(settings.hostname,"big_seven_%06X", ESP.getChipId());
+  WiFi.hostname(settings.hostname);
+
   //WiFi.disconnect();
   WiFi.mode(WIFI_STA);
   
@@ -69,18 +78,28 @@ void setup() {
     Serial.println("Configuring access point...");
     WiFi.mode(WIFI_AP_STA);
     WiFi.disconnect();
-    if (WiFi.softAP(new_hostname.c_str())) {
-      Serial.printf("Successfully created access point: %s\n", new_hostname.c_str());
+    if (WiFi.softAP(settings.hostname)) {
+      
+      Serial.printf("Successfully created access point: %s\n", settings.hostname);
       Serial.printf("IP addess: %s\n", WiFi.softAPIP().toString().c_str());
+      
+      //start DNS server for easier configuration
+      Serial.println(F("Starting DNS server"));
+      dns_server.start(53, "*", WiFi.softAPIP());
+      settings.soft_ap = true;
+      
     } else {
       Serial.println(F("Something failed"));
       while (1);
     }
   }
 
+  //settings that need wifi connection
+  settings.online = (boolean) Ping.ping("www.google.com");
+  
   server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request ) {
+    settings.reboot = true;
     request->redirect("/");
-    ESP.restart();
   });
   server.on("/wifi", HTTP_GET,  handle_wifi);
   server.on("/time", HTTP_GET,  handle_time);
@@ -89,11 +108,19 @@ void setup() {
   server.on("/time", HTTP_POST,  handle_time_save);
   server.serveStatic("/", SPIFFS, "/").setCacheControl("max-age:600");
 
+  Serial.println(F("Starting HTTP server"));
   server.begin();
-  Serial.println(F("HTTP server started on port 80"));
   Serial.println(F("Starting network scanning async"));
   WiFi.scanNetworks(1);
 }
 
 void loop() {
+  if(settings.reboot){
+    Serial.println("Got restart request from the wire!");
+    settings.reboot = false;
+    ESP.restart();
+  }
+  if(settings.soft_ap){
+    dns_server.processNextRequest();
+  }
 }

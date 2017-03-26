@@ -1,4 +1,5 @@
 var express = require('express');
+var argv = require('minimist')(process.argv.slice(2));
 var app = express();
 
 var bodyParser = require('body-parser');
@@ -7,8 +8,8 @@ app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
 
 app.use(express.static(__dirname + '/html'));
-var status_code = 200;
-var random_wait = 100;
+var status_code = argv['c'] ? argv['c'] : 200;
+var random_wait = argv['w'] ? argv['w'] : 100;
 
 
 app.get("/overview", function(req,res) {

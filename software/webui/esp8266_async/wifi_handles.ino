@@ -4,10 +4,13 @@
 void handle_overview(AsyncWebServerRequest *request) {
 
   String json_resp;
-
-  json_resp = "{\"ChipID\": \"" + String(ESP.getChipId(), HEX) + "\",";
+  char chipid[6] = {0};
+  sprintf(chipid, "%06X", ESP.getChipId());
+   
+  json_resp = "{\"ChipID\": \"" + String(chipid) + "\",";
   json_resp += "\"CPU frequency\": \"" + String(ESP.getCpuFreqMHz()) + " MHz\",";
   json_resp += "\"Last reset reason\": \"" + ESP.getResetReason() + "\",";
+  json_resp += "\"Internet\": \"" + String(settings.online ? "online" : "offline") + "\",";
   json_resp += "\"Uptime\": \"" + String(millis()/1000) + "s\",";
   json_resp += "\"Free heap\": \"" + formatBytes(ESP.getFreeHeap()) + "\",";
   json_resp += "\"Storage size\": \"" + formatBytes(ESP.getFlashChipSize()) + "\",";
