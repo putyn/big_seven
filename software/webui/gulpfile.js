@@ -34,11 +34,11 @@ const useref = require('gulp-useref');
 const gulpif = require('gulp-if');
 const inline = require('gulp-inline');
  
-var data_path = 'esp8266_async/data';
+var data_path = 'webui/data';
  
 /* Clean destination folder */
 gulp.task('clean', function() {
-    return del(['esp8266_async/data/*']);
+    return del(['webui/data/*']);
 });
  
 /* Copy static files */
