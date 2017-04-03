@@ -1,3 +1,2 @@
-
-software/webui/esp8266_static/data/
-software/webui/esp8266_async/data/
+software/webui/node_modules/
+software/webui/webui/data/

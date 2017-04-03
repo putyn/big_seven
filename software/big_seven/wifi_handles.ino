@@ -2,6 +2,7 @@
  * callback for /overview GET
  * returns system information
  * json format
+ * based on https://bitbucket.org/xoseperez/espurna/src/6969ee84a09827b0d146c09b08ad5449357d13c6/code/espurna/espurna.ino?at=master&fileviewer=file-view-default#espurna.ino-115
  */
 void handle_overview(AsyncWebServerRequest *request) {
 

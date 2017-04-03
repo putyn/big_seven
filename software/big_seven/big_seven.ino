@@ -7,48 +7,12 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <FS.h>
-
-//data types & protoypes
-struct dtime_t {
-  uint8_t mseconds;
-  uint8_t seconds;
-  uint8_t minutes;
-  uint8_t hours;
-} local_time;
-
-struct wifi_settings_t {
-  char ssid[32];
-  char pass[32];
-} wifi;
-
-struct settings_t {
-  char time_server[32];
-  char hostname[32];
-  int16_t time_zone;
-  int16_t time_dst;
-  boolean update_display;
-  boolean update_time;
-  boolean reboot;
-  boolean online;
-  boolean soft_ap;
-} settings;
-
-dtime_t ntp_get_time();
-void ntp_send_request(IPAddress& address);
-void update_displays(dtime_t t);
-void tock();
-
-//defines and variables
-#define CSN_PIN 16
-#define OE_PIN 2
-#define TICK_PIN 12
+#include "big_seven.h"
 
 //web server, dns server, ticker, udp client
 AsyncWebServer server(80);
 DNSServer dns_server;
 Ticker ticks;
-WiFiUDP ntp;
-
 
 void setup() {
 
@@ -70,9 +34,9 @@ void setup() {
   //load settings, not all settings are saved to flash
   if (SPIFFS.exists("/settings.dat")) {
     read_file((char *)"/settings.dat", (byte *)&settings, sizeof(struct settings_t));
-    Serial.printf("[FS]Time server: %s\n", settings.time_server);
-    Serial.printf("[FS]Time zone: %d\n", settings.time_zone);
-    Serial.printf("[FS]Time DST: %d\n", settings.time_dst);
+    Serial.printf("[FS] Time server: %s\n", settings.time_server);
+    Serial.printf("[FS] Time zone: %d\n", settings.time_zone);
+    Serial.printf("[FS] Time DST: %d\n", settings.time_dst);
   }
   //settings that are not saved
   settings.reboot = false;
@@ -83,16 +47,14 @@ void setup() {
   //set a nice hostname
   sprintf(settings.hostname, "big_seven_%06X", ESP.getChipId());
   WiFi.hostname(settings.hostname);
-
-  //WiFi.disconnect();
-  WiFi.mode(WIFI_STA);
-
+  
   //check to see if we have config file
   Serial.println(F("[WiFi] Checking to see if we have new config..."));
   if (SPIFFS.exists("/wifi.dat")) {
     //read wifi settings from file
     read_file((char *)"/wifi.dat", (byte *)&wifi, sizeof(struct wifi_settings_t));
     Serial.printf("[WiFi] Found config trying to connect to ssid %s\n", wifi.ssid);
+    WiFi.mode(WIFI_STA);
     WiFi.begin(wifi.ssid, wifi.pass);
     //remove config
     SPIFFS.remove("/wifi.dat");
@@ -125,6 +87,9 @@ void setup() {
     }
   }
 
+  /*
+   * web requests bind
+   */
   server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request ) {
     settings.reboot = true;
     request->redirect("/");
@@ -136,9 +101,9 @@ void setup() {
   server.on("/time", HTTP_POST,  handle_time_save);
   server.serveStatic("/", SPIFFS, "/").setCacheControl("max-age:600");
 
-  Serial.println(F("Starting HTTP server"));
+  Serial.println(F("[HTTP] Starting HTTP server"));
   server.begin();
-  Serial.println(F("Starting network scanning async"));
+  Serial.println(F("[WiFi] Starting network scanning async"));
   WiFi.scanNetworks(1);
 
    //configure SPI for displays
@@ -172,19 +137,23 @@ void setup() {
 }
 
 void loop() {
+  //check reboot flag
   if (settings.reboot) {
     Serial.println("Got restart request from the wire!");
     settings.reboot = false;
     ESP.restart();
   }
+  //check soft_ap flag to handle DNS requests
   if (settings.soft_ap) {
     dns_server.processNextRequest();
   }
+  //check display update flag
   if (settings.update_display) {
     settings.update_display = 0;
     update_displays(local_time);
   }
-  if (settings.update_time) {
+  //check update time flag or next update update
+  if (settings.update_time || millis() > settings.next_ntp_update) {
     settings.update_time = 0;
     local_time = ntp_get_time();
   }

@@ -23,14 +23,7 @@ void tock() {
   }
   if (local_time.hours > 23) {
     local_time.hours = 0;
-  }
-  /**
-   * needs updated doesn't work properly
-   * periodically update the time via ntp @1:00AM 
-  if(local_time.hours == 1 && local_time.minutes == 0 && local_time.seconds == 0 && local_time.mseconds == 0) {
-    settings.update_time = 1;
-  }
-  */ 
+  } 
   /**
    * since this is an interrupt we dont want to execute too much code here
    * we will update the clock in the loop
@@ -46,9 +39,9 @@ void tock() {
 }
 /**
  * updates the display
- * @parm t dt
+ * @parm ctime_t t
 */
-void update_displays(dtime_t t) {
+void update_displays(ctime_t t) {
   /**
    * since display 1 & 2 are rotated 180 deg, data for the 7 segment display looks a bit different
   */
@@ -142,3 +135,23 @@ void read_file(char* fname, byte* memAddress, int datasize) {
     f.close();
   }
 }
+/*
+ * pretty uptime
+ 
+String mkuptime(uint32_t seconds) {
+  uint8_t days;
+  uint8_t hours;
+  uint8_t minutes;
+
+  days = seconds / 86400;
+  seconds = seconds % days;
+  hours = seconds / 3600;
+  seconds = seconds % hours;
+  minutes = seconds / 60;
+  seconds = seconds % minutes;
+
+  char buf[32] = {0};
+  sprintf(buf, "%d days, %d hours, %d minutes, %d seconds", days, hours, minutes, seconds);
+  Serial.println(buf);
+}
+*/

@@ -90,7 +90,7 @@ body {
  * custom css
  * padding for aligning text with input
  */
-div#container_time > div.list-group > div.list-group-item > div.row > div.text-right {
+div#container_time, div#container_hw  > div.list-group > div.list-group-item > div.row > div.text-right {
 	padding-top: 8.5px;
 }
 /* 
@@ -104,4 +104,11 @@ div#container_time > div.list-group > div.list-group-item > div.row > div.text-r
  */
 div#network_available > a.list-group-item {
 	cursor: pointer;
+}
+/*
+ * nouislider
+ */
+.noUi-connect {
+	border-radius: 4px;
+	background: #428bca;
 }

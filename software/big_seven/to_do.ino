@@ -1,6 +1,5 @@
 /**
  * to do:
- *    - auto update rewrite 
  *    - AM/PM
  *    - intensity w/ auto night time
  *    - wireless OTA
@@ -9,6 +8,7 @@
  *    - implemented webui: 
  *        * wifi config
  *        * time config 
+ *    - update every 12h
  *  03.01.2016
  *    - basic functionality (connect to wifi, get time via ntp, display time)
  */

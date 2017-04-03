@@ -13,9 +13,10 @@
 	<!-- build:css style.css -->
 	<link href="css/bootstrap.css" rel="stylesheet">
 	<link href="css/bootstrap-theme.css" rel="stylesheet">
-	<link href="css/dashboard.css" rel="stylesheet">
 	<link href="css/roboto.css" rel="stylesheet">
+	<link href="css/nouislider.css" rel="stylesheet">
 	<link href="css/nprogress.css" rel="stylesheet">
+	<link href="css/dashboard.css" rel="stylesheet">
 	<!-- build:css style.css -->
 </head>
 <body>
@@ -26,9 +27,9 @@
 			<div id="navbar" class="navbar-collapse collapse">
 				<ul class="nav navbar-nav navbar-right visible-xs-block">
 					<li><a href="#overview"> <span class="glyphicon glyphicon-dashboard"></span> Overview </a></li>
-					<li><a href="#wifi"> <span class="glyphicon glyphicon-signal"></span> WiFi Setting </a></li>
-					<li><a href="#time"> <span class="glyphicon glyphicon-time"></span> Time Setting </a></li>
-					<li><a href="#fwupdate"> <span class="glyphicon glyphicon-cog"></span> Firmware update </a></li>
+					<li><a href="#wifi"> <span class="glyphicon glyphicon-signal"></span> WiFi Configuration </a></li>
+					<li><a href="#time"> <span class="glyphicon glyphicon-time"></span> Time Configuration </a></li>
+					<li><a href="#hw"> <span class="glyphicon glyphicon-cog"></span> Hardware Configuration </a></li>
 					<li><a href="/reboot"> <span class="glyphicon glyphicon-off"></span> Reboot </a></li>
 				</ul>
 			</div>
@@ -39,9 +40,9 @@
 			<div class="col-sm-3 col-md-2 sidebar">
 				<ul class="nav nav-sidebar">
 					<li><a href="#overview"> <span class="glyphicon glyphicon-dashboard"></span> Overview </a></li>
-					<li><a href="#wifi"> <span class="glyphicon glyphicon-signal"></span> WiFi Setting </a></li>
-					<li><a href="#time"> <span class="glyphicon glyphicon-time"></span> Time Setting </a></li>
-					<li><a href="#fwupdate"> <span class="glyphicon glyphicon-cog"></span> Firmware update </a></li>
+					<li><a href="#wifi"> <span class="glyphicon glyphicon-signal"></span> WiFi Configuration </a></li>
+					<li><a href="#time"> <span class="glyphicon glyphicon-time"></span> Time Configuration </a></li>
+					<li><a href="#hw"> <span class="glyphicon glyphicon-cog"></span> Hardware Configuration </a></li>
 					<li><a href="/reboot"> <span class="glyphicon glyphicon-off"></span> Reboot </a></li>
 				</ul>
 			</div>
@@ -164,16 +165,48 @@
 						<button type="button" class="btn btn-default" id="btn_save"> <span class="glyphicon glyphicon-ok"></span> Save </button>
 					</div>
 				</div>
-				<div id="container_fwupdate" class="hidden">
-					<h3 class="page-header">Firmware update</h3> <strong>Not yet implemented! though its desired</strong>
+				<div id="container_hw" class="hidden">
+					<h3 class="page-header">Hardware Configuration</h3>
+					<label for="hardware_brightness">Display Brightness</label>
+					<div class="list-group" id="hardware_brightness">
+						<div class="list-group-item">
+							<div class="row">
+								<div class="col-xs-4 col-md-3 text-right" style="padding-top:0px;"> <strong>Brightness:</strong></div>
+								<div class="col-xs-8 col-md-9 text-left" style="padding-right:28px;">
+									<div id="brightness_slider" style="margin-bottom:10px;"></div>
+									<div class="text text-muted" id="brightness_slider_val"></div>
+								</div>
+							</div>
+						</div>
+					</div>	
+						
+					<label for="hardware_fwupgrade">Firmware upgrade</label>
+					<div class="list-group" id="hardware_fwupgrade">
+						<div class="list-group-item">
+							<div class="row">
+								<div class="col-xs-4 col-md-3 text-right"> <strong>Firmware file:</strong></div>
+								<div class="col-xs-8 col-md-9 text-left">
+									<div class="input-group">
+										<input type="text" class="form-control" readonly>
+										<div class="input-group-btn">
+											<input type="file" id="fw_file" style="display: none;">
+											<button class="btn btn-default" id="btn_browse"><span class="glyphicon glyphicon-folder-open"></span></button>
+											<button class="btn btn-default" id="btn_clear"><span class="glyphicon glyphicon glyphicon-remove"></span></button>
+										</div>
+									</div>
+								</div>	
+							</div>
+						</div>	
+					</div>
 				</div>
-			</div>
-		</div>
-	</div>
+		</div><!-- content:container:row -->
+		</div><!-- main:container:row -->
+	</div> <!-- main:container-->
 	<!-- build:js script.js -->
 	<script src="js/jquery.js"></script>
 	<script src="js/bootstrap.js"></script>
 	<script src="js/nprogress.js"></script>
+	<script src="js/nouislider.js"></script>
 	<!-- endbuild -->
 	<script>
 		$(document).ready(function() {
@@ -182,6 +215,34 @@
 			//pretty bar without  spinner
 			NProgress.configure({
 				showSpinner: false
+			});
+			
+			//pretty slider
+			noUiSlider.create($("#brightness_slider")[0], {
+				start: 5,
+				step: 5,
+				connect: [true, false],
+				range: {
+					'min': 0,
+					'max': 100
+				},
+				format: {
+				from: function(value) {
+						return parseInt(value);
+					},
+				to: function(value) {
+						return parseInt(value);
+					}
+				}
+			});
+			$("#brightness_slider")[0].noUiSlider.on("update", function(values, handle) {
+				console.log(values[handle]);
+				if(values[handle] < 5) {
+					$("#brightness_slider_val").html("Value: " + 5);
+					$("#brightness_slider")[0].noUiSlider.set(5);
+				} else {
+					$("#brightness_slider_val").html("Value: " + values[handle]);
+				}
 			});
 			
 			//bind menu clicks
@@ -259,6 +320,21 @@
 						else
 					$(".navbar-right > li > a[href*=wifi]").click();
 			});
+			
+			//bind file upload
+			$("#btn_browse").on("click", function() {
+				//console.log($(this));
+				//$(this).parents('.input-group').find(':text').val($(this).val());
+				$(this).siblings(':file').click();
+			});
+			$("#fw_file").on("change", function() {
+				$(this).parents('.input-group').find(':text').val($(this).val());
+			});
+			$("#btn_clear").on("click", function () {
+				$(this).parents('.input-group').find(':text').val('');
+				$(this).siblings(':file').val();
+			});
+			
 			
 			//post requests
 			//bind wifi network config
@@ -392,7 +468,7 @@
 					NProgress.done();
 				});
 				break;
-			case "fwupdate":
+			case "hw":
 				NProgress.done();
 		}
 	}
