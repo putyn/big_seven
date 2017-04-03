@@ -1,10 +1,12 @@
+//ntp client
+WiFiUDP ntp;
 #define NTP_PACKET_SIZE 48
 /**
  * get time via NTP
  * returns time in the custom structure
  * havely based on https://www.arduino.cc/en/Tutorial/UdpNTPClient
  */
-dtime_t ntp_get_time() {
+ctime_t ntp_get_time() {
   
   //local port for receving data back
   static uint16_t local_port = 8266;
@@ -30,10 +32,13 @@ dtime_t ntp_get_time() {
   //unitx time from 1970
   uint32_t epoch = 0;
   
-  dtime_t tmp_time;
+  ctime_t tmp_time;
   
   //get ip from the pool
-  WiFi.hostByName(settings.time_server, ntp_server_ip);
+  if(!WiFi.hostByName(settings.time_server, ntp_server_ip)) {
+    Serial.printf("[NTP]Can't get ip for host %s\n", settings.time_server);
+    return local_time;  
+  }
   
   //debug info
   Serial.printf("[NTP] server IP from pool: %s\n",ntp_server_ip.toString().c_str());
@@ -59,6 +64,8 @@ dtime_t ntp_get_time() {
   tmp_time.minutes = (epoch  % 3600) / 60;
   tmp_time.seconds = epoch  % 60;
 
+  //set next ntp update
+  settings.next_ntp_update = millis() + NTP_UPDATE;
   ntp.stop();
   
   return tmp_time;
@@ -70,7 +77,7 @@ dtime_t ntp_get_time() {
 void ntp_send_request(IPAddress& ntp_server_ip) {
 
   uint8_t ntp_packet[NTP_PACKET_SIZE];
-  Serial.println(F("Requesting NTP packet"));
+  Serial.println(F("[NTP] Requesting NTP packet"));
   // set all bytes in the buffer to 0
   memset(ntp_packet, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request

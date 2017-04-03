@@ -2,6 +2,7 @@
  * callback for /overview GET
  * returns system information
  * json format
+ * based on https://bitbucket.org/xoseperez/espurna/src/6969ee84a09827b0d146c09b08ad5449357d13c6/code/espurna/espurna.ino?at=master&fileviewer=file-view-default#espurna.ino-115
  */
 void handle_overview(AsyncWebServerRequest *request) {
 
@@ -112,15 +113,18 @@ void handle_time_save(AsyncWebServerRequest *request) {
     settings.time_dst  = request->getParam("time_dst", true)->value().toInt();
     
     //update time with new settings
+    Serial.printf("Time server: %s\n", settings.time_server);
+    settings.online = Ping.ping(settings.time_server) > 0 ? true : false;
+    Serial.println(Ping.ping(settings.time_server));
     settings.update_time = true;
     
     if (save_file((char *)"/settings.dat", (byte *)&settings, sizeof(struct settings_t))) {
       json_resp = F("{\"error\":false, \"message\": \"\"}");
     } else {
-      json_resp = F("{\"error\":true, \"message\": \"Settings could not be saved\"}");
+      json_resp = F("{\"error\":true, \"message\": \"settings could not be saved\"}");
     }
   } else {
-    json_resp = F("{\"error\":true, \"message\": \"Bad request\"}");
+    json_resp = F("{\"error\":true, \"message\": \"bad request\"}");
   }
   
   request->send(200, "text/json", json_resp);
